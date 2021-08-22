@@ -41,10 +41,12 @@ def initiate_main_sequence(url:str, followers_amount:int, list_:list):
             break
 
 if __name__ == '__main__':
-    user_input = input('twitter account username: ')
-    followers = int(input('how many followers does this account have? : '))
+    user_input = input('twitter username: ')
+    followers = int(input('How many followers does this ID have? : '))
     target_account = "https://twitter.com/" + user_input + "/followers"
     d = []
-    initiate_main_sequence(target_account, followers, d)
-    final_data = {'user_id':list(set(d))}
-    pd.DataFrame(final_data).to_csv(f'{user_input} followers.csv')
+    try:
+        initiate_main_sequence(target_account, followers, d)
+    finally:
+        final_data = {'user_id':list(set(d))}
+        pd.DataFrame(final_data).to_csv(f'{user_input} followers.csv')

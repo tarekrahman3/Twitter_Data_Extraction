@@ -48,5 +48,5 @@ if __name__ == '__main__':
     try:
         initiate_main_sequence(target_account, followers, d)
     finally:
-        final_data = {'user_id':list(set(d))}
+        final_data = {'user_id': list(set(d))}
         pd.DataFrame(final_data).to_csv(f'{user_input} followers.csv')

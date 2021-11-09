@@ -1,52 +1,59 @@
-from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
-import pandas as pd
+import undetected_chromedriver.v2 as uc
 import time
+import re
+from selenium.webdriver.common.by import By
+import pandas as pd
 
-options = Options()
-options.add_argument("--start-maximized")
-options.add_argument("--no-sandbox")
+def dict_csv_read():
+    return pd.read_csv('import.csv').to_dict('records')
 
-def auth(driver):
-    driver.get('https://twitter.com/login')
-    time.sleep(5)
-    username = 'your username'
-    password = 'your password'
-    username_box = driver.find_element_by_xpath('//input[@name="session[username_or_email]"]').send_keys(username)
-    password_box = driver.find_element_by_xpath('//input[@name="session[password]"]').send_keys(password)
-    driver.find_element_by_xpath('//div[@dir="auto" and span/span[text()="Log in"]]').click()
+def scrape(url, index, dict_array):
+    if index%50==0:
+        pd.DataFrame(dict_array).to_csv('backup_data.csv', index = False)
+    try:
+        driver.get(url)
+        emails_search = driver.execute_script(r'return Array.from(new Set(Array.from(String(document.body.innerText).matchAll(/\b[a-zA-Z0-9.-]+@[a-zA-Z0-9.-]+\.[a-zA-Z0-9.-]+\b/g)).map((e)=>e.toString().trim().toLowerCase())))')
+        emails = []
+        emails_search = list(set([re.sub(r'^www\.|^undefined|^email|\.$','',i) for i in emails_search]))
+        [emails.append(i) for i in emails_search]
+        e = driver.execute_script(r' return Array.from(new Set(Array.from(String(document.documentElement.outerHTML).matchAll(/\b[a-zA-Z0-9.-]+@[a-zA-Z0-9.-]+\.[a-zA-Z0-9.-]+\b/g)).map((e)=>e.toString().trim().toLowerCase())))')
+        [emails.append(i) for i in e]
+    except:
+        emails = None
+    try:
+        phone_number = list(set([re.sub(r'\(|\)','',i) for i in driver.execute_script(r"return Array.from(new Set(Array.from(String(document.body.innerText).matchAll(/\(02\) \d{4} \d{4}|02 \d{4} \d{4}/g)).map((e)=>e.toString().trim())))")]))
+    except:
+        phone_number = None
+    data = {
+        'source':url,
+        'domain_emails':list(set(emails)),
+        'phone_number':phone_number
+        }
+    print(f"{index} | {data}")
+    dict_array.append(data)
 
-def GetAllVisibleFollowers(driver):
-    each_followers__username_xpath = '//div[@aria-label="Timeline: Followers"]/div/div//a[@aria-hidden]'
-    All_Visible_Followers = driver.find_elements_by_xpath(each_followers__username_xpath)
-    return All_Visible_Followers
+def for_single_address():
+    dict_array = []
+    try:
+        for index, url in enumerate(import_):
+                time.sleep(1)
+                scrape(url, index, dict_array)
+    except Exception as e:
+        print(e)
+    finally:
+        pd.DataFrame(dict_array).to_csv('export_type_single.csv', index = False)
 
-def scrollvisibleheight(driver):
-    driver.execute_script('window.scrollBy(0,window.top.innerHeight+window.top.innerHeight/2)')
 
-def initiate_main_sequence(url:str, followers_amount:int, list_:list):
-    driver = webdriver.Firefox(executable_path = "./geckodriver")
-    auth(driver)
-    driver.get(url)
-    while True:
-        if len(set(list_))>=followers_amount:
-            break
-        try:
-            users = GetAllVisibleFollowers(driver)
-            [d.append(user.get_attribute('href')) for user in users]
-            scrollvisibleheight(driver)
-            time.sleep(2)
-            print(len(set(list_)))
-        except KeyboardInterrupt:
-            break
+def for_google_search_result():
+    dict_array = []
+    for each_dict in import_:
+        print(list(each_dict.keys())[0])
 
 if __name__ == '__main__':
-    user_input = input('twitter username: ')
-    followers = int(input('How many followers does this ID have? : '))
-    target_account = "https://twitter.com/" + user_input + "/followers"
-    d = []
-    try:
-        initiate_main_sequence(target_account, followers, d)
-    finally:
-        final_data = {'user_id': list(set(d))}
-        pd.DataFrame(final_data).to_csv(f'{user_input} followers.csv')
+    #driver = uc.Chrome()
+    #driver.set_page_load_timeout(20)
+    import_ = dict_csv_read()
+    print(import_)
+    #for_single_address()
+    for_google_search_result()
+    #driver.quit()

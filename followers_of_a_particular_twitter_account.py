@@ -25,7 +25,7 @@ def scrollvisibleheight(driver):
     driver.execute_script('window.scrollBy(0,window.top.innerHeight+window.top.innerHeight/2)')
 
 def initiate_main_sequence(url:str, followers_amount:int, list_:list):
-    driver = webdriver.Firefox(executable_path="./geckodriver")
+    driver = webdriver.Firefox(executable_path = "./geckodriver")
     auth(driver)
     driver.get(url)
     while True:
